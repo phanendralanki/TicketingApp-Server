@@ -31,4 +31,41 @@ const getUserIssues = async(req,res)=>{
     }
 };
 
-export {createIssue,getUserIssues};
+//update issue
+const updateIssue = asyncHandler(async(req,res)=>{
+    try{
+        const {id} = req.params;
+        const {title,description} = req.body;
+        const updatedIssue = await Issue.findByIdAndUpdate(id,{
+            title,description
+        },{
+            new:true,
+            runValidators:true
+        });
+        if(!updatedIssue){
+            throw new ApiError(404,"Issuse not found");
+        }
+        res.json({updatedIssue});
+
+    }catch(error){
+        throw new ApiError(400,error?.message)
+    }
+});
+
+//delete issue
+const deleteIssue = asyncHandler(async(req,res)=>{
+    const {id} = req.params;
+    try{
+        const deletedIssue = await Issue.findByIdAndDelete(id);
+        if(!deleteIssue){
+            throw new ApiError(404,error?.message||"Issue not found");
+        }
+
+        return res.status(200).json(new ApiResponse(200,"Issue Deleted Successfully"));
+
+    }catch(error){
+        throw new ApiError(500,error?.message);
+    }
+});
+
+export {createIssue,getUserIssues,updateIssue,deleteIssue};
