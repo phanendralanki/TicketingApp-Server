@@ -7,3 +7,8 @@
 6. return res
 
 # Algorithm For User Login
+1. Get the data from frontend
+2. find the user with the email id or username
+3. check the password
+4. Generate access and refresh Token
+5. send cookie - access and refresh Token
