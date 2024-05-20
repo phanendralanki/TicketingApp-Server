@@ -4,6 +4,7 @@ import { User } from "../models/user.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 import {sendEmail} from "../utils/SendMail.js";
+import crypto from "crypto";
 
 // only internal method - so no need of asyncHandler(used for web requests)
 const generateAccessAndRefreshToken = async (userId) => {
@@ -233,4 +234,32 @@ const forgotPassword = asyncHandler(async(req,res,next)=>{
 });
 
 
-export { registerUser, loginUser,logoutUser,refreshAccessToken,forgotPassword };
+//reset Password
+const resetPassword = asyncHandler(async(req,res,next)=>{
+  const {token} = req.params;
+  const resetPasswordToken = crypto
+  .createHash("sha256")
+  .update(token)
+  .digest("hex");
+
+  const user = await User.findOne({
+    resetPasswordToken,
+    resetPasswordExpire:{
+      $gt:Date.now(),
+    },
+  });
+
+  if(!user)
+    throw new ApiError(500,"Token is invalid or has been expired");
+
+  //if user found
+  user.password = req.body.password;
+  user.resetPasswordExpire = undefined;
+  user.resetPasswordToken = undefined;
+  await user.save();
+
+  res.status(200).json(new ApiResponse(200,"Password changed successfully"));
+
+});
+
+export { registerUser, loginUser,logoutUser,refreshAccessToken,forgotPassword,resetPassword };
