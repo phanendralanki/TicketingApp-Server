@@ -3,6 +3,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
+import {sendEmail} from "../utils/SendMail.js";
 
 // only internal method - so no need of asyncHandler(used for web requests)
 const generateAccessAndRefreshToken = async (userId) => {
@@ -91,7 +92,7 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new ApiError(401, "Invalid user credentials");
   }
 
-  //generating access aand refresh token
+  //generating access and refresh token
   const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
     user._id
   );
@@ -209,4 +210,27 @@ const logoutUser = asyncHandler(async (req,res)=>{
 });
 
 
-export { registerUser, loginUser,logoutUser,refreshAccessToken };
+//forgot password
+const forgotPassword = asyncHandler(async(req,res,next)=>{
+  const {email} = req.body;
+  const user = await User.findOne({email});
+  if(!user) return next(new ApiError(400,"No user with this email"));
+
+  const resetToken = await user.getResetToken();
+  await user.save();
+  const url = `${process.env.FRONTEND_URL}/resetPassword/${resetToken}`;
+  //http://localhost:3000/resetPassword/fasfaj23423
+
+  const message = `Click on the link to reset your password. ${url}. If you haven't requested then please ignore`;
+
+  //send token via email
+  await sendEmail(user.email,"OneYes Reset Password",message);
+  res.status(200).json({
+    success:true,
+    message:`Reset Token has been sent to ${user.email}`,
+  });
+
+});
+
+
+export { registerUser, loginUser,logoutUser,refreshAccessToken,forgotPassword };
